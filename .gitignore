@@ -1,0 +1,5 @@
+.cabal-sandbox
+dist/
+notes/
+imagefun.cfg
+cabal.sandbox.config
