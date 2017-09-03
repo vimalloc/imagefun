@@ -1,5 +1,5 @@
 [POSTGRES]
-host = 127.0.0.1
+host = 166.70.53.214
 port = 5432
 username = <username>
 password = <password>
