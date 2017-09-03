@@ -1,6 +1,8 @@
 module Main where
 
-import Categories
+import Models.Category
+import Queries.Category
+
 import Control.Monad
 import Data.ConfigFile
 import Data.Either.Utils
@@ -30,7 +32,7 @@ main = do
     let connStr = forceEither $ parseDbString cp
     connection <- connectPostgreSQL connStr
 
-    categories <- runCategoryQuery connection categoryQuery
+    categories <- runCategoryQuery connection categoriesQuery
     case null categories of
         True  -> putStrLn "No categories exist in the table"
         False -> mapM_ print categories
