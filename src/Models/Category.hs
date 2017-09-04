@@ -5,7 +5,8 @@
 
 module Models.Category where
 
-import Opaleye (Column, Table(Table), required, PGInt4, PGText, pgString, pgInt4)
+import Opaleye (Column, Table(Table), required, PGInt4, PGText, pgString,
+                pgInt4, optional)
 import Data.Profunctor.Product.TH (makeAdaptorAndInstance)
 
 
@@ -13,19 +14,27 @@ data Category' id name = Category
     { categoryId   :: id
     , categoryName :: name
     } deriving (Show)
-type Category       = Category' Int String
-type CategoryColumn = Category' (Column PGInt4) (Column PGText)
+
+type CategoryRead        = Category' Int String
+type CategoryWrite       = Category' (Maybe Int) String
+type CategoryColumnRead  = Category' (Column PGInt4)
+                                     (Column PGText)
+type CategoryColumnWrite = Category' (Maybe (Column PGInt4))
+                                     (Column PGText)
 
 
 $(makeAdaptorAndInstance "pCategory" ''Category')
 
-categoryTable :: Table CategoryColumn CategoryColumn
+categoryTable :: Table CategoryColumnWrite CategoryColumnRead
 categoryTable = Table "Categories" (pCategory Category
-                                       { categoryId   = required "CategoryId"
+                                       { categoryId   = optional "CategoryId"
                                        , categoryName = required "Name"
                                        })
 
-categoryToPG :: Category -> CategoryColumn
-categoryToPG = pCategory Category { categoryId   = pgInt4
+categoryToPG :: CategoryWrite -> CategoryColumnWrite
+categoryToPG = pCategory Category { categoryId   = const Nothing
                                   , categoryName = pgString
                                   }
+
+makeCategory :: String -> CategoryWrite
+makeCategory name = Category Nothing name

@@ -16,16 +16,16 @@ parseDbString cp = liftM5 buildDbString (getDb "host") (getDb "port")
   where
     getDb = get cp "POSTGRES"
 
-buildDbString :: String -> String -> String -> String -> String -> BS.ByteString
-buildDbString host port user password dbname = BS.pack connStr
-  where
-    connTemplate = "host=%s port=%s user=%s password=%s dbname=%s"
-    connStr      = printf connTemplate host port user password dbname
+    buildDbString :: String -> String -> String -> String -> String -> BS.ByteString
+    buildDbString host port user password dbname = BS.pack connStr
+      where
+        connTemplate = "host=%s port=%s user=%s password=%s dbname=%s"
+        connStr      = printf connTemplate host port user password dbname
 
 
 main :: IO ()
 main = do
-    val <- readfile emptyCP "imagefun.cfg"
+    val   <- readfile emptyCP "imagefun.cfg"
     let cp = forceEither val
 
     let connStr = forceEither $ parseDbString cp
@@ -40,4 +40,9 @@ main = do
     category <- runCategoryQuery connection $ categoryByIdQuery catId
     case null category of
         True  -> putStrLn $ printf "Category id %d does not exist in the table" catId
-        False -> mapM_ print categories
+        False -> mapM_ print category
+
+    -- TODO get better day then rows added back from this call
+    -- TODO catch exception when unique constraint fails
+    rowsAdded <- categoryInsert connection $ categoryToPG . makeCategory $ "Funny"
+    putStrLn $ show rowsAdded
