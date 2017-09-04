@@ -1,34 +1,18 @@
 module Main where
 
-import           Models.Category
-import           Queries.Category
-import           Control.Monad
-import           Data.ConfigFile
-import           Data.Either.Utils
-import           Database.PostgreSQL.Simple
-import           Text.Printf
-import qualified Data.ByteString.Char8 as BS
+import Models.Category
+import Queries.Category
+import ConfigHelper
 
-parseDbString :: ConfigParser -> Either CPError BS.ByteString
-parseDbString cp = liftM5 buildDbString (getDb "host") (getDb "port")
-                                        (getDb "username") (getDb "password")
-                                        (getDb "dbname")
-  where
-    getDb = get cp "POSTGRES"
-
-    buildDbString :: String -> String -> String -> String -> String -> BS.ByteString
-    buildDbString host port user password dbname = BS.pack connStr
-      where
-        connTemplate = "host=%s port=%s user=%s password=%s dbname=%s"
-        connStr      = printf connTemplate host port user password dbname
-
+import Data.Either.Utils
+import Database.PostgreSQL.Simple
+import Text.Printf
 
 main :: IO ()
 main = do
-    val   <- readfile emptyCP "imagefun.cfg"
-    let cp = forceEither val
-
+    cp <- getConfigParser
     let connStr = forceEither $ parseDbString cp
+
     connection <- connectPostgreSQL connStr
 
     categories <- runCategoryQuery connection categoriesQuery
