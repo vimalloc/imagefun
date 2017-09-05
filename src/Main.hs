@@ -2,17 +2,22 @@ module Main where
 
 import Models.Category
 import Queries.Category
+import RestAPI.Category
 import ConfigHelper
 
+import Network.Wai.Handler.Warp (run)
 import Data.Either.Utils
 import Database.PostgreSQL.Simple
 import Text.Printf
 
 main :: IO ()
+main = run 8081 app
+
+{-
+main :: IO ()
 main = do
     cp <- getConfigParser
     let connStr = forceEither $ parseDbString cp
-
     connection <- connectPostgreSQL connStr
 
     categories <- runCategoryQuery connection categoriesQuery
@@ -30,3 +35,4 @@ main = do
     -- TODO catch exception when unique constraint fails
     rowsAdded <- categoryInsert connection $ categoryToPG . makeCategory $ "Funny"
     putStrLn $ show rowsAdded
+-}

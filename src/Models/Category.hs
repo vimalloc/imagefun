@@ -7,6 +7,7 @@ module Models.Category where
 
 import Opaleye (Column, Table(Table), required, PGInt4, PGText, pgString,
                 pgInt4, optional)
+import Data.Aeson
 import Data.Profunctor.Product.TH (makeAdaptorAndInstance)
 
 
@@ -22,6 +23,10 @@ type CategoryColumnRead  = Category' (Column PGInt4)
 type CategoryColumnWrite = Category' (Maybe (Column PGInt4))
                                      (Column PGText)
 
+instance ToJSON CategoryRead where
+    toJSON post = object [ "id"        .= categoryId post
+                         , "name"     .= categoryName post
+                         ]
 
 $(makeAdaptorAndInstance "pCategory" ''Category')
 
