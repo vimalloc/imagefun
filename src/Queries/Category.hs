@@ -4,25 +4,24 @@ module Queries.Category where
 
 import           Models.Category
 
-
-import           Data.Int
-import           Opaleye (queryTable, Query, runQuery, Column, PGInt4, PGText,
-                          restrict, (.==), pgInt4, pgString, runInsertMany)
+import           Data.Int (Int64)
+import qualified Opaleye as O
+import           Opaleye ((.==))
 import           Control.Arrow (returnA)
 import qualified Database.PostgreSQL.Simple as PGS
 
 
-categoriesQuery :: Query CategoryColumnRead
-categoriesQuery = queryTable categoryTable
+categoriesQuery :: O.Query CategoryColumnRead
+categoriesQuery = O.queryTable categoryTable
 
-categoryByIdQuery :: Int -> Query CategoryColumnRead
+categoryByIdQuery :: Int -> O.Query CategoryColumnRead
 categoryByIdQuery id = proc () -> do
-                           category <- categoriesQuery -< ()
-                           restrict -< categoryId category .== pgInt4 id
-                           returnA  -< category
+                           category   <- categoriesQuery -< ()
+                           O.restrict -< categoryId category .== O.pgInt4 id
+                           returnA    -< category
 
 categoryInsert :: PGS.Connection -> CategoryColumnWrite -> IO Int64
-categoryInsert conn category = runInsertMany conn categoryTable [category]
+categoryInsert conn category = O.runInsertMany conn categoryTable [category]
 
-runCategoryQuery :: PGS.Connection -> Query CategoryColumnRead -> IO [CategoryRead]
-runCategoryQuery = runQuery
+runCategoryQuery :: PGS.Connection -> O.Query CategoryColumnRead -> IO [CategoryRead]
+runCategoryQuery = O.runQuery

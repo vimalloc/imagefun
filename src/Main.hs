@@ -1,14 +1,14 @@
 module Main where
 
-import Models.Category
-import Queries.Category
+--import Models.Category
+--import Queries.Category
 import RestAPI.Category
-import ConfigHelper
+--import ConfigHelper
 
 import Network.Wai.Handler.Warp (run)
-import Data.Either.Utils
-import Database.PostgreSQL.Simple
-import Text.Printf
+--import Data.Either.Utils
+--import Database.PostgreSQL.Simple
+--import Text.Printf
 
 main :: IO ()
 main = run 8081 app

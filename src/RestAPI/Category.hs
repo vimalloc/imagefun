@@ -9,23 +9,23 @@
 
 module RestAPI.Category where
 
-import Models.Category
-import Queries.Category
-import ConfigHelper
+import           ConfigHelper
+import           Models.Category
+import           Queries.Category
 
-import Control.Monad.IO.Class
-import Data.Either.Utils
-import Database.PostgreSQL.Simple
-import Network.Wai
-import Network.Wai.Handler.Warp
-import Servant
+import           Control.Monad.IO.Class (liftIO)
+import           Data.Either.Utils (forceEither)
+import           Database.PostgreSQL.Simple (connectPostgreSQL)
+import qualified Network.Wai as NW
+import qualified Servant as S
+import           Servant ((:>))
 
-type CategoryApi = "categories" :> Get '[JSON] [CategoryRead]
+type CategoryApi = "categories" :> S.Get '[S.JSON] [CategoryRead]
 
 
 -- TODO get a connection pool for postgres connections instead of making
 --      one per request. This is just a dummy setup to test things work.
-categoryServer :: Server CategoryApi
+categoryServer :: S.Server CategoryApi
 categoryServer = do
     cp <- liftIO getConfigParser
     let connStr = forceEither $ parseDbString cp
@@ -34,8 +34,8 @@ categoryServer = do
     return categories
 
 
-categoryApi :: Proxy CategoryApi
-categoryApi = Proxy
+categoryApi :: S.Proxy CategoryApi
+categoryApi = S.Proxy
 
-app :: Application
-app = serve categoryApi categoryServer
+app :: NW.Application
+app = S.serve categoryApi categoryServer

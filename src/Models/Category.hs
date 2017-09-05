@@ -5,10 +5,9 @@
 
 module Models.Category where
 
-import Opaleye (Column, Table(Table), required, PGInt4, PGText, pgString,
-                pgInt4, optional)
-import Data.Aeson
-import Data.Profunctor.Product.TH (makeAdaptorAndInstance)
+import           Data.Aeson (ToJSON, (.=), toJSON, object)
+import           Data.Profunctor.Product.TH (makeAdaptorAndInstance)
+import qualified Opaleye as O
 
 
 data Category' id name = Category
@@ -18,27 +17,27 @@ data Category' id name = Category
 
 type CategoryRead        = Category' Int String
 type CategoryWrite       = Category' (Maybe Int) String
-type CategoryColumnRead  = Category' (Column PGInt4)
-                                     (Column PGText)
-type CategoryColumnWrite = Category' (Maybe (Column PGInt4))
-                                     (Column PGText)
+type CategoryColumnRead  = Category' (O.Column O.PGInt4)
+                                     (O.Column O.PGText)
+type CategoryColumnWrite = Category' (Maybe (O.Column O.PGInt4))
+                                     (O.Column O.PGText)
 
 instance ToJSON CategoryRead where
-    toJSON post = object [ "id"        .= categoryId post
-                         , "name"     .= categoryName post
+    toJSON post = object [ "id"   .= categoryId post
+                         , "name" .= categoryName post
                          ]
 
 $(makeAdaptorAndInstance "pCategory" ''Category')
 
-categoryTable :: Table CategoryColumnWrite CategoryColumnRead
-categoryTable = Table "Categories" (pCategory Category
-                                       { categoryId   = optional "CategoryId"
-                                       , categoryName = required "Name"
+categoryTable :: O.Table CategoryColumnWrite CategoryColumnRead
+categoryTable = O.Table "Categories" (pCategory Category
+                                       { categoryId   = O.optional "CategoryId"
+                                       , categoryName = O.required "Name"
                                        })
 
 categoryToPG :: CategoryWrite -> CategoryColumnWrite
 categoryToPG = pCategory Category { categoryId   = const Nothing
-                                  , categoryName = pgString
+                                  , categoryName = O.pgString
                                   }
 
 makeCategory :: String -> CategoryWrite

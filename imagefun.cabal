@@ -16,7 +16,7 @@ cabal-version:       >=1.10
 
 executable imagefun
   main-is:             Main.hs
-  build-depends:       aeson == 1.2.1.0
+  build-depends:       aeson == 1.2.1.0,
                        base >=4.9 && <4.10,
                        bytestring == 0.10.8.1,
                        ConfigFile == 1.1.4,
@@ -28,6 +28,6 @@ executable imagefun
                        servant-server == 0.11,
                        time == 1.6.0.1,
                        wai == 3.2.1.1,
-                       warp == 3.2.13,
+                       warp == 3.2.13
   hs-source-dirs:      src
   default-language:    Haskell2010
