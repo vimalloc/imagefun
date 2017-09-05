@@ -41,19 +41,18 @@ getAllCategories = do
     categories <- liftIO $ runCategoryQuery connection categoriesQuery
     return categories
 
-
--- TODO return 404 with error if category doesn't exist
--- TODO this query should just return a Maybe with the Just being the single
---      result fo the query, instead of returning a list and making us deal
---      with it
+-- TODO return json if category is not found
 getCategoryById :: Int -> S.Handler CategoryRead
 getCategoryById categoryId = do
     cp <- liftIO getConfigParser
     let connStr = forceEither $ parseDbString cp
     connection <- liftIO $ connectPostgreSQL connStr
-    category <- liftIO $ runCategoryQuery connection $ categoryByIdQuery categoryId
-    return $ category !! 0
-
+    category <- liftIO $ categoryById connection categoryId
+    case category of
+        Just c  -> return c
+        Nothing -> S.throwError categoryNotFound
+  where
+    categoryNotFound = S.err404 { S.errBody = "cagegoryId not found (TODO RETURN JSON" }
 
 app :: NW.Application
 app = S.serve categoryApi categoryServer
