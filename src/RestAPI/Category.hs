@@ -10,12 +10,13 @@
 module RestAPI.Category where
 
 import           Models.Category
-import           RestAPI.RestErrors
 import           Queries.Category
+import           RestAPI.RestHelpers
 
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.Trans.Reader (ReaderT, runReaderT, ask)
 import           Control.Monad.Trans.Except (ExceptT)
+import           Control.Monad.Trans.Class (lift)
 import           Database.PostgreSQL.Simple (Connection)
 import qualified Network.Wai as NW
 import qualified Opaleye as O
@@ -26,6 +27,7 @@ import           Servant ((:>), (:<|>) (..), (:~>))
 --      a different file (like RestHandler, etc)
 
 
+-- TODO Do the break combinators up thing here to save space
 type CategoryApi = "categories" :> S.Get '[S.JSON] [CategoryRead]
               :<|> "categories" :> S.Capture "categoryId" Int :> S.Get '[S.JSON] CategoryRead
 
@@ -37,31 +39,26 @@ categoryApi = S.Proxy
 
 categoryServer :: S.ServerT CategoryApi RestHandler
 categoryServer = getAllCategories
-             :<|> getCategoryById
+            :<|> getCategoryById
   where
     getAllCategories :: RestHandler [CategoryRead]
     getAllCategories = do
-        connection <- ask
-        liftIO $ O.runQuery connection categoriesQuery
+        conn <- ask
+        liftIO $ O.runQuery conn categoriesQuery
 
-    -- TODO run query here instead of cateboryById, and do another function to
-    --      verify that exactly one result is found (like listToMaybe_
     getCategoryById :: Int -> RestHandler CategoryRead
     getCategoryById categoryId = do
-        connection <- ask
-        category <- liftIO $ categoryById connection categoryId
-        case category of
-            Just c  -> return c
-            Nothing -> S.throwError notFoundErr
+        conn     <- ask
+        category <- liftIO $ O.runQuery conn $ categoryByIdQuery categoryId
+        lift $ oneOrError category notFoundErr
       where
-        notFoundDetail = "Category " ++ (show categoryId) ++ " was not found."
-        notFoundTitle  = "CategoryNotFound"
-        notFoundErr    = errorToJSON 404 notFoundTitle notFoundDetail
+        notFoundErr = errorToJSON 404 "CategoryNotFound"
+                      $ "Category " ++ (show categoryId) ++ " was not found."
 
 -- TODO I understand why this is needed, but I don't understand how it
 --      actually works at all.
-readerTToExcept :: Connection -> RestHandler :~> S.Handler
-readerTToExcept connection = S.NT (\r -> runReaderT r connection)
+restHandlerToExcept :: Connection -> RestHandler :~> S.Handler
+restHandlerToExcept connection = S.NT (\r -> runReaderT r connection)
 
 app ::Connection -> NW.Application
-app conn = S.serve categoryApi $ S.enter (readerTToExcept conn) categoryServer
+app conn = S.serve categoryApi $ S.enter (restHandlerToExcept conn) categoryServer
