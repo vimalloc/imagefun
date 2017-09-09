@@ -10,6 +10,7 @@
 module RestAPI.Category where
 
 import           Models.Category
+import           RestAPI.RestErrors
 import           Queries.Category
 
 import           Control.Monad.IO.Class (liftIO)
@@ -43,12 +44,6 @@ categoryServer = getAllCategories
         connection <- ask
         liftIO $ O.runQuery connection categoriesQuery
 
-    -- TODO return json if category is not found
-    -- TODO what happens if I change this to return Maybe CategoryRead? If
-    --      `Nothing` is the result, what does the resulting JSON look like?
-    --      Could I do more transformers here so that I didn't have to evaulate
-    --      case of maybe, and just do '<-' instead? Could I still have that
-    --      return a 404?
     -- TODO run query here instead of cateboryById, and do another function to
     --      verify that exactly one result is found (like listToMaybe_
     getCategoryById :: Int -> RestHandler CategoryRead
@@ -57,9 +52,11 @@ categoryServer = getAllCategories
         category <- liftIO $ categoryById connection categoryId
         case category of
             Just c  -> return c
-            Nothing -> S.throwError categoryNotFound
+            Nothing -> S.throwError notFoundErr
       where
-        categoryNotFound = S.err404 { S.errBody = "cagegoryId not found (TODO RETURN JSON" }
+        notFoundDetail = "Category " ++ (show categoryId) ++ " was not found."
+        notFoundTitle  = "CategoryNotFound"
+        notFoundErr    = errorToJSON 404 notFoundTitle notFoundDetail
 
 -- TODO I understand why this is needed, but I don't understand how it
 --      actually works at all.

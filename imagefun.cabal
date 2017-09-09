@@ -19,6 +19,7 @@ executable imagefun
   build-depends:       aeson == 1.2.1.0,
                        base >=4.9 && <4.10,
                        bytestring == 0.10.8.1,
+                       case-insensitive == 1.2.0.7,
                        ConfigFile == 1.1.4,
                        MissingH == 1.4.0.1,
                        opaleye == 0.5.4.0,
