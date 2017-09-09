@@ -27,6 +27,7 @@ executable imagefun
                        servant == 0.11,
                        servant-server == 0.11,
                        time == 1.6.0.1,
+                       transformers == 0.5.2.0,
                        wai == 3.2.1.1,
                        warp == 3.2.13
   hs-source-dirs:      src
