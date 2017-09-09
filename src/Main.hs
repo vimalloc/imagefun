@@ -8,6 +8,7 @@ import Database.PostgreSQL.Simple (connectPostgreSQL, Connection)
 import Network.Wai.Handler.Warp (run)
 
 -- TODO hlint everything
+-- TODO add logging (WIA middleware + reader)
 
 main :: IO ()
 main = do

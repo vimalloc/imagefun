@@ -20,6 +20,7 @@ import           Control.Monad.Trans.Class (lift)
 import           Database.PostgreSQL.Simple (Connection)
 import qualified Network.Wai as NW
 import qualified Opaleye as O
+import           Opaleye ((.==))
 import qualified Servant as S
 import           Servant ((:>), (:<|>) (..), (:~>))
 
@@ -27,9 +28,12 @@ import           Servant ((:>), (:<|>) (..), (:~>))
 --      a different file (like RestHandler, etc)
 
 
--- TODO Do the break combinators up thing here to save space
-type CategoryApi = "categories" :> S.Get '[S.JSON] [CategoryRead]
-              :<|> "categories" :> S.Capture "categoryId" Int :> S.Get '[S.JSON] CategoryRead
+type CategoryApi = "categories" :>
+                     (
+                     S.Get '[S.JSON] [CategoryRead]
+                :<|> S.Capture "id" Int :> S.Get '[S.JSON] CategoryRead
+                :<|> S.Capture "id" Int :> S.DeleteNoContent '[S.JSON] S.NoContent
+                     )
 
 -- TODO get a connection pool instead of single connection in the ReaderT monad
 type RestHandler = ReaderT Connection S.Handler
@@ -40,6 +44,7 @@ categoryApi = S.Proxy
 categoryServer :: S.ServerT CategoryApi RestHandler
 categoryServer = getAllCategories
             :<|> getCategoryById
+            :<|> deleteCategoryById
   where
     getAllCategories :: RestHandler [CategoryRead]
     getAllCategories = do
@@ -50,10 +55,20 @@ categoryServer = getAllCategories
     getCategoryById categoryId = do
         conn     <- ask
         category <- liftIO $ O.runQuery conn $ categoryByIdQuery categoryId
-        lift $ oneOrError category notFoundErr
-      where
-        notFoundErr = errorToJSON 404 "CategoryNotFound"
-                      $ "Category " ++ (show categoryId) ++ " was not found."
+        lift $ oneOrError category $ categoryNotFound categoryId
+
+    deleteCategoryById :: Int -> RestHandler S.NoContent
+    deleteCategoryById id = do
+        conn <- ask
+        numDeleted <- liftIO $ O.runDelete conn categoryTable
+                               (\cat -> (categoryId cat) .== (O.pgInt4 id))
+        case numDeleted of
+            0 -> S.throwError $ categoryNotFound id
+            1 -> return S.NoContent
+
+categoryNotFound :: Int -> S.ServantErr
+categoryNotFound id = errorToJSON 404 "CategoryNotFound"
+                      $ "Category " ++ (show id) ++ " was not found."
 
 -- TODO I understand why this is needed, but I don't understand how it
 --      actually works at all.
