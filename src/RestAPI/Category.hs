@@ -33,6 +33,7 @@ type CategoryApi = "categories" :>
                      (
                      S.Get '[S.JSON] [CategoryRead]
                 :<|> S.Capture "id" Int :> S.Get '[S.JSON] CategoryRead
+                :<|> S.ReqBody '[S.JSON] CategoryWrite :> S.Post '[S.JSON] CategoryRead
                 :<|> S.Capture "id" Int :> S.DeleteNoContent '[S.JSON] S.NoContent
                      )
 
@@ -44,6 +45,7 @@ categoryApi = S.Proxy
 categoryServer :: S.ServerT CategoryApi RestHandler
 categoryServer = getAllCategories
             :<|> getCategoryById
+            :<|> createNewCategory
             :<|> deleteCategoryById
   where
     getAllCategories :: RestHandler [CategoryRead]
@@ -53,11 +55,23 @@ categoryServer = getAllCategories
         liftIO $ O.runQuery conn categoriesQuery
 
     getCategoryById :: Int -> RestHandler CategoryRead
-    getCategoryById categoryId = do
+    getCategoryById id = do
+        pool     <- ask
+        conn     <- getConnFromPool pool
+        category <- liftIO $ O.runQuery conn $ categoryByIdQuery id
+        lift . oneOrError category $ categoryNotFound id
+
+    -- TODO get primary key back from original query instead of having
+    --      to run two seperate queries here
+    -- TODO catch and handle unique key failure
+    createNewCategory :: CategoryWrite -> RestHandler CategoryRead
+    createNewCategory newCat = do
         pool <- ask
         conn <- getConnFromPool pool
-        category <- liftIO $ O.runQuery conn $ categoryByIdQuery categoryId
-        lift $ oneOrError category $ categoryNotFound categoryId
+        let category = categoryToCategoryColumn newCat
+        liftIO $ O.runInsertMany conn categoryTable [category]
+        categories <- liftIO $ O.runQuery conn $ categoryByNameQuery (categoryName newCat)
+        return $ categories !! 0
 
     deleteCategoryById :: Int -> RestHandler S.NoContent
     deleteCategoryById id = do

@@ -20,6 +20,8 @@ categoryByIdQuery id = proc () -> do
                            O.restrict -< categoryId category .== O.pgInt4 id
                            returnA    -< category
 
--- TODO remove this from queries as well.
-categoryInsert :: PGS.Connection -> CategoryColumnWrite -> IO Int64
-categoryInsert conn category = O.runInsertMany conn categoryTable [category]
+categoryByNameQuery :: String -> O.Query CategoryColumnRead
+categoryByNameQuery name = proc () -> do
+                               category   <- categoriesQuery -< ()
+                               O.restrict -< categoryName category .== O.pgString name
+                               returnA    -< category
