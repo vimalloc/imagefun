@@ -61,17 +61,13 @@ categoryServer = getAllCategories
         category <- liftIO $ O.runQuery conn $ categoryByIdQuery id
         lift . oneOrError category $ categoryNotFound id
 
-    -- TODO get primary key back from original query instead of having
-    --      to run two seperate queries here
     -- TODO catch and handle unique key failure
     createNewCategory :: CategoryWrite -> RestHandler CategoryRead
     createNewCategory newCat = do
         pool <- ask
         conn <- getConnFromPool pool
-        let category = categoryToCategoryColumn newCat
-        liftIO $ O.runInsertMany conn categoryTable [category]
-        categories <- liftIO $ O.runQuery conn $ categoryByNameQuery (categoryName newCat)
-        return $ categories !! 0
+        liftIO $ O.runInsertManyReturning conn categoryTable
+                 [categoryToCategoryColumn newCat] (id) >>= (return . (!! 0))
 
     deleteCategoryById :: Int -> RestHandler S.NoContent
     deleteCategoryById id = do
