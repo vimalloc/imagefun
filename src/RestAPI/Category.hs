@@ -84,8 +84,8 @@ categoryServer = getAllCategories
             1 -> return S.NoContent
 
 categoryNotFound :: Int -> S.ServantErr
-categoryNotFound id = errorToJSON 404 "CategoryNotFound"
-                      $ "Category " ++ (show id) ++ " was not found."
+categoryNotFound id = encodeJSONError $ JSONError 404 "Category Not Found"
+                                        ("Category " ++ (show id) ++ " was not found.")
 
 restHandlerToSHandler :: (Pool Connection) -> RestHandler :~> S.Handler
 restHandlerToSHandler pool = S.NT (\r -> runReaderT r pool)
