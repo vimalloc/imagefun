@@ -89,9 +89,6 @@ categoryServer = getAllCategories
 categoryNotFound :: Int -> S.ServantErr
 categoryNotFound id = encodeJSONError $ JSONError 404 "Category Not Found"
                                         ("Category " ++ (show id) ++ " was not found.")
-sqlError :: SqlError -> S.ServantErr
-sqlError sqlErr = encodeJSONError $ JSONError 500 "SQL Error" (show $ sqlErrorMsg sqlErr)
-
 uniqueFailedError :: CategoryWrite -> S.ServantErr
 uniqueFailedError c = encodeJSONError err
   where

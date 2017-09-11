@@ -23,7 +23,9 @@ type CategoryColumnRead  = Category' (O.Column O.PGInt4)
 type CategoryColumnWrite = Category' (Maybe (O.Column O.PGInt4))
                                      (O.Column O.PGText)
 
--- TODO see if we can use the generic and have Aeson derive the JSON stuff for us
+-- Even if "id" gets passed in here (which it is not required), the
+-- ategoryToCategoryColumn function -will insure that it gets erased, so
+-- we don't have any security concerns that pop up as a result of that.
 instance FromJSON CategoryWrite where
     parseJSON = withObject "CategoryWrite" $ \c -> Category
         <$> c .:? "id"
@@ -46,6 +48,3 @@ categoryToCategoryColumn :: CategoryWrite -> CategoryColumnWrite
 categoryToCategoryColumn = pCategory Category { categoryId   = const Nothing
                                               , categoryName = O.pgString
                                               }
-
-makeCategory :: String -> CategoryWrite
-makeCategory name = Category Nothing name
