@@ -13,7 +13,7 @@ import           Models.Category
 import           Queries.Category
 import           RestAPI.RestHelpers
 
-import           Control.Exception (try)
+import           Control.Exception (try, throw)
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.Trans.Reader (ReaderT, runReaderT, ask)
 import           Control.Monad.Trans.Except (ExceptT)
@@ -34,8 +34,6 @@ import           Servant ((:>), (:<|>) (..), (:~>))
 --      in category endpoints, as 'id' overrides the default 'id' function,
 --      which we are using in at least one endpoint, and 'categoryId' overrides
 --      another function which is used to pull the id out of a category
---
--- TODO wrap all the other SQL stuff up in the SqlError handler? Or is that excesive?
 
 type CategoryApi = "categories" :>
                      (
@@ -80,7 +78,7 @@ categoryServer = getAllCategories
         case result of
             Left  ex  -> case (sqlState ex) of
                             "23505"   -> S.throwError $ uniqueFailedError newCat
-                            otherwise -> S.throwError $ sqlError ex
+                            otherwise -> throw ex
             Right val -> return val
 
     deleteCategoryById :: Int -> RestHandler S.NoContent
