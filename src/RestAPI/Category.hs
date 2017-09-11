@@ -30,11 +30,6 @@ import           Servant ((:>), (:<|>) (..), (:~>))
 -- TODO break everything that will need to go into multiple apis up into
 --      a different file (like RestHandler, etc)
 
--- TODO don't use 'id' or 'categoryId' as name for database primary key
---      in category endpoints, as 'id' overrides the default 'id' function,
---      which we are using in at least one endpoint, and 'categoryId' overrides
---      another function which is used to pull the id out of a category
-
 type CategoryApi = "categories" :>
                      (
                      S.Get '[S.JSON] [CategoryRead]
@@ -61,11 +56,11 @@ categoryServer = getAllCategories
         liftIO $ O.runQuery conn categoriesQuery
 
     getCategoryById :: Int -> RestHandler CategoryRead
-    getCategoryById id = do
+    getCategoryById catId = do
         pool     <- ask
         conn     <- getConnFromPool pool
-        category <- liftIO $ O.runQuery conn $ categoryByIdQuery id
-        lift . oneOrError category $ categoryNotFound id
+        category <- liftIO $ O.runQuery conn $ categoryByIdQuery catId
+        lift . oneOrError category $ categoryNotFound catId
 
     createNewCategory :: CategoryWrite -> RestHandler CategoryRead
     createNewCategory newCat = do
@@ -82,13 +77,13 @@ categoryServer = getAllCategories
             Right val -> return val
 
     deleteCategoryById :: Int -> RestHandler S.NoContent
-    deleteCategoryById id = do
+    deleteCategoryById catId = do
         pool <- ask
         conn <- getConnFromPool pool
         numDeleted <- liftIO $ O.runDelete conn categoryTable
-                               (\cat -> (categoryId cat) .== (O.pgInt4 id))
+                               (\cat -> (categoryId cat) .== (O.pgInt4 catId))
         case numDeleted of
-            0 -> S.throwError $ categoryNotFound id
+            0 -> S.throwError $ categoryNotFound catId
             1 -> return S.NoContent
 
 categoryNotFound :: Int -> S.ServantErr
