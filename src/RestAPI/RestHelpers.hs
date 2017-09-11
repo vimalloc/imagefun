@@ -29,6 +29,7 @@ encodeJSONError jsonError = err {S.errBody = jsonBody, S.errHeaders = [jsonHeade
 getErrorFromCode :: Int -> S.ServantErr
 getErrorFromCode 400 = S.err400
 getErrorFromCode 404 = S.err404
+getErrorFromCode 409 = S.err409
 getErrorFromCode 500 = S.err500
 
 -- The bottom case for this (multiple results) should never be hit. The only
