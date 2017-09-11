@@ -29,6 +29,9 @@ import           Servant ((:>), (:<|>) (..), (:~>))
 
 -- TODO break everything that will need to go into multiple apis up into
 --      a different file (like RestHandler, etc)
+-- TODO consider making a seperate sub folder for each api, and then we
+--      can break up exceptions, endpoint handlers, etc. (easier to view
+--      code you need to look at if they are in different files)
 
 type CategoryApi = "categories" :>
                      (
@@ -57,13 +60,14 @@ categoryServer = getAllCategories
         conn <- getConnFromPool pool
         liftIO $ O.runQuery conn categoriesQuery
 
-    -- TODO I don't actually like the oneOrError. Remove it
     getCategory :: Int -> RestHandler CategoryRead
     getCategory catId = do
         pool     <- ask
         conn     <- getConnFromPool pool
         category <- liftIO $ O.runQuery conn $ categoryByIdQuery catId
-        lift . oneOrError category $ categoryNotFound catId
+        case category of
+            []  -> S.throwError $ categoryNotFound catId
+            x:_ -> return x
 
     createCategory :: CategoryWrite -> RestHandler CategoryRead
     createCategory newCat = do
