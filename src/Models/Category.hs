@@ -48,3 +48,10 @@ categoryToCategoryColumn :: CategoryWrite -> CategoryColumnWrite
 categoryToCategoryColumn = pCategory Category { categoryId   = const Nothing
                                               , categoryName = O.pgString
                                               }
+
+-- TODO this name sucks. Come up with a better name (at least until
+--      https://github.com/tomjaguarpaw/haskell-opaleye/issues/92 is resolved)
+categoryToCategoryColumnId :: Int -> CategoryWrite -> CategoryColumnWrite
+categoryToCategoryColumnId catId  = pCategory Category { categoryId   = const $ Just (O.pgInt4 catId)
+                                                       , categoryName = O.pgString
+                                                       }

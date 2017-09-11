@@ -34,7 +34,8 @@ type CategoryApi = "categories" :>
                      (
                      S.Get '[S.JSON] [CategoryRead]
                 :<|> S.Capture "id" Int :> S.Get '[S.JSON] CategoryRead
-                :<|> S.ReqBody '[S.JSON] CategoryWrite :> S.Post '[S.JSON] CategoryRead
+                :<|> S.ReqBody '[S.JSON] CategoryWrite :> S.PostCreated '[S.JSON] CategoryRead
+                :<|> S.Capture "id" Int :> S.ReqBody '[S.JSON] CategoryWrite :> S.Put '[S.JSON] CategoryRead
                 :<|> S.Capture "id" Int :> S.DeleteNoContent '[S.JSON] S.NoContent
                      )
 
@@ -45,9 +46,10 @@ categoryApi = S.Proxy
 
 categoryServer :: S.ServerT CategoryApi RestHandler
 categoryServer = getAllCategories
-            :<|> getCategoryById
-            :<|> createNewCategory
-            :<|> deleteCategoryById
+            :<|> getCategory
+            :<|> createCategory
+            :<|> updateCategory
+            :<|> deleteCategory
   where
     getAllCategories :: RestHandler [CategoryRead]
     getAllCategories = do
@@ -55,15 +57,16 @@ categoryServer = getAllCategories
         conn <- getConnFromPool pool
         liftIO $ O.runQuery conn categoriesQuery
 
-    getCategoryById :: Int -> RestHandler CategoryRead
-    getCategoryById catId = do
+    -- TODO I don't actually like the oneOrError. Remove it
+    getCategory :: Int -> RestHandler CategoryRead
+    getCategory catId = do
         pool     <- ask
         conn     <- getConnFromPool pool
         category <- liftIO $ O.runQuery conn $ categoryByIdQuery catId
         lift . oneOrError category $ categoryNotFound catId
 
-    createNewCategory :: CategoryWrite -> RestHandler CategoryRead
-    createNewCategory newCat = do
+    createCategory :: CategoryWrite -> RestHandler CategoryRead
+    createCategory newCat = do
         pool   <- ask
         conn   <- getConnFromPool pool
         result <- liftIO (try (
@@ -76,8 +79,26 @@ categoryServer = getAllCategories
                             otherwise -> throw ex
             Right val -> return val
 
-    deleteCategoryById :: Int -> RestHandler S.NoContent
-    deleteCategoryById catId = do
+    updateCategory :: Int -> CategoryWrite -> RestHandler CategoryRead
+    updateCategory catId newCat = do
+        pool   <- ask
+        conn   <- getConnFromPool pool
+        result <- liftIO (try (
+                      O.runUpdateReturning conn categoryTable
+                      (\_ -> categoryToCategoryColumnId catId newCat)
+                      (\cat -> (categoryId cat) .== (O.pgInt4 catId))
+                      (id)
+                  ) :: IO (Either SqlError [CategoryRead]))
+        case result of
+            Left  ex  -> case (sqlState ex) of
+                            "23505"   -> S.throwError $ uniqueFailedError newCat
+                            otherwise -> throw ex
+            Right val -> case (val) of
+                            []  -> S.throwError $ categoryNotFound catId
+                            x:_ -> return x
+
+    deleteCategory :: Int -> RestHandler S.NoContent
+    deleteCategory catId = do
         pool <- ask
         conn <- getConnFromPool pool
         numDeleted <- liftIO $ O.runDelete conn categoryTable
