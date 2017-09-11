@@ -1,7 +1,5 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -74,13 +72,13 @@ categoryServer = getAllCategories
         pool   <- ask
         conn   <- getConnFromPool pool
         result <- liftIO (try (
-                      O.runInsertManyReturning conn categoryTable
-                      [categoryToCategoryColumn newCat] (id) >>= (return . (!! 0))
+                      fmap (!! 0) (O.runInsertManyReturning conn categoryTable
+                                   [categoryToCategoryColumn newCat] id)
                   ) :: IO (Either SqlError CategoryRead))
         case result of
-            Left  ex  -> case (sqlState ex) of
-                            "23505"   -> S.throwError $ uniqueFailedError newCat
-                            otherwise -> throw ex
+            Left  ex  -> case sqlState ex of
+                            "23505"  -> S.throwError $ uniqueFailedError newCat
+                            _       -> throw ex
             Right val -> return val
 
     updateCategory :: Int -> CategoryWrite -> RestHandler CategoryRead
@@ -90,14 +88,14 @@ categoryServer = getAllCategories
         result <- liftIO (try (
                       O.runUpdateReturning conn categoryTable
                       (\_ -> categoryToCategoryColumnId catId newCat)
-                      (\cat -> (categoryId cat) .== (O.pgInt4 catId))
-                      (id)
+                      (\cat -> categoryId cat .== O.pgInt4 catId)
+                      id
                   ) :: IO (Either SqlError [CategoryRead]))
         case result of
-            Left  ex  -> case (sqlState ex) of
-                            "23505"   -> S.throwError $ uniqueFailedError newCat
-                            otherwise -> throw ex
-            Right val -> case (val) of
+            Left  ex  -> case sqlState ex of
+                            "23505" -> S.throwError $ uniqueFailedError newCat
+                            _       -> throw ex
+            Right val -> case val of
                             []  -> S.throwError $ categoryNotFound catId
                             x:_ -> return x
 
@@ -106,25 +104,25 @@ categoryServer = getAllCategories
         pool <- ask
         conn <- getConnFromPool pool
         numDeleted <- liftIO $ O.runDelete conn categoryTable
-                               (\cat -> (categoryId cat) .== (O.pgInt4 catId))
+                               (\cat -> categoryId cat .== O.pgInt4 catId)
         case numDeleted of
             0 -> S.throwError $ categoryNotFound catId
             1 -> return S.NoContent
 
 categoryNotFound :: Int -> S.ServantErr
 categoryNotFound id = encodeJSONError $ JSONError 404 "Category Not Found"
-                                        ("Category " ++ (show id) ++ " was not found.")
+                                        ("Category " ++ show id ++ " was not found.")
 uniqueFailedError :: CategoryWrite -> S.ServantErr
 uniqueFailedError c = encodeJSONError err
   where
     err = JSONError 409 "Cagetory Exists"
-                    ("The category '" ++ (categoryName c) ++ "' already exists")
+                    ("The category '" ++ categoryName c ++ "' already exists")
 
-restHandlerToSHandler :: (Pool Connection) -> RestHandler :~> S.Handler
-restHandlerToSHandler pool = S.NT (\r -> runReaderT r pool)
+restHandlerToSHandler :: Pool Connection -> RestHandler :~> S.Handler
+restHandlerToSHandler pool = S.NT (`runReaderT` pool)
 
-getConnFromPool :: (Pool Connection) -> RestHandler Connection
+getConnFromPool :: Pool Connection -> RestHandler Connection
 getConnFromPool pool = withResource pool return
 
-app :: (Pool Connection) -> NW.Application
+app :: Pool Connection -> NW.Application
 app pool = S.serve categoryApi $ S.enter (restHandlerToSHandler pool) categoryServer

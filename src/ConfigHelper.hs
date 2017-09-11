@@ -20,4 +20,4 @@ parseDbString cp = liftM5 buildDbString (getDb "host") (getDb "port")
         connStr      = printf connTemplate host port user password dbname
 
 getConfigParser :: IO CP.ConfigParser
-getConfigParser = CP.readfile CP.emptyCP "imagefun.cfg" >>= return . forceEither
+getConfigParser = fmap forceEither (CP.readfile CP.emptyCP "imagefun.cfg")

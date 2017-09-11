@@ -21,8 +21,7 @@ encodeJSONError jsonError = err {S.errBody = jsonBody, S.errHeaders = [jsonHeade
   where
     err        = getErrorFromCode $ statusCode jsonError
     jsonBody   = encode jsonError
-    jsonHeader = ((mk $ pack "Content-Type"),
-                  (pack "application/json;charset=utf-8"))
+    jsonHeader = (mk $ pack "Content-Type", pack "application/json;charset=utf-8")
 
 -- Non-exhaustive. Trivial to add more, just only adding the ones I
 -- am currently using.

@@ -8,7 +8,6 @@ import           Data.Pool (createPool)
 import qualified Database.PostgreSQL.Simple as PGS
 import           Network.Wai.Handler.Warp (run)
 
--- TODO hlint everything
 -- TODO add logging (WIA middleware + reader)
 -- TODO change pool timeout and whatnot info to config file (and increase
 --      timeout of resource in the pool to match postgres config, bigger is
