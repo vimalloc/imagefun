@@ -77,7 +77,7 @@ categoryServer = getAllCategories
                   ) :: IO (Either SqlError CategoryRead))
         case result of
             Left  ex  -> case sqlState ex of
-                            "23505"  -> S.throwError $ uniqueFailedError newCat
+                            "23505" -> S.throwError $ uniqueFailedError newCat
                             _       -> throw ex
             Right val -> return val
 

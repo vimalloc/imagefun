@@ -4,3 +4,6 @@ port = 5432
 username = <username>
 password = <password>
 dbname = imagefun
+number_of_pools = 1
+connections_per_pool = 5
+connection_timeout = 300

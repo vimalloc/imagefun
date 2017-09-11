@@ -3,6 +3,7 @@ module ConfigHelper where
 import           Control.Monad (liftM5)
 import qualified Data.ConfigFile as CP
 import           Data.Either.Utils (forceEither)
+import           Data.Time.Clock (NominalDiffTime)
 import           Text.Printf (printf)
 import qualified Data.ByteString.Char8 as BS
 
@@ -19,5 +20,14 @@ parseDbString cp = liftM5 buildDbString (getDb "host") (getDb "port")
         connTemplate = "host=%s port=%s user=%s password=%s dbname=%s"
         connStr      = printf connTemplate host port user password dbname
 
+parseNumPools :: CP.ConfigParser -> Either CP.CPError Int
+parseNumPools cp = CP.get cp "POSTGRES" "number_of_pools"
+
+parseConnsPerPool :: CP.ConfigParser -> Either CP.CPError Int
+parseConnsPerPool cp = CP.get cp "POSTGRES" "connections_per_pool"
+
+parseConnTimeout :: CP.ConfigParser -> Either CP.CPError NominalDiffTime
+parseConnTimeout cp = fromInteger <$> CP.get cp "POSTGRES" "connection_timeout"
+
 getConfigParser :: IO CP.ConfigParser
-getConfigParser = fmap forceEither (CP.readfile CP.emptyCP "imagefun.cfg")
+getConfigParser = forceEither <$> CP.readfile CP.emptyCP "imagefun.cfg"
