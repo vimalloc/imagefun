@@ -14,7 +14,6 @@ import  Network.Wai.Middleware.RequestLogger (mkRequestLogger, destination,
                                               Destination(Logger))
 import  System.Log.FastLogger (newStdoutLoggerSet, defaultBufSize)
 
--- TODO add logging (WIA middleware + reader)
 
 main :: IO ()
 main = do
