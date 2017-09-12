@@ -71,10 +71,9 @@ categoryServer = getAllCategories
     createCategory newCat = do
         pool   <- ask
         conn   <- getConnFromPool pool
-        result <- liftIO (try (
-                      fmap (!! 0) (O.runInsertManyReturning conn categoryTable
-                                   [categoryToCategoryColumn newCat] id)
-                  ) :: IO (Either SqlError CategoryRead))
+        result <- liftIO $ try $
+                      head <$> O.runInsertManyReturning conn categoryTable
+                               [categoryToCategoryColumn newCat] id
         case result of
             Left  ex  -> case sqlState ex of
                             "23505" -> S.throwError $ uniqueFailedError newCat
@@ -85,12 +84,11 @@ categoryServer = getAllCategories
     updateCategory catId newCat = do
         pool   <- ask
         conn   <- getConnFromPool pool
-        result <- liftIO (try (
+        result <- liftIO $ try $
                       O.runUpdateReturning conn categoryTable
                       (\_ -> categoryToCategoryColumnId catId newCat)
                       (\cat -> categoryId cat .== O.pgInt4 catId)
                       id
-                  ) :: IO (Either SqlError [CategoryRead]))
         case result of
             Left  ex  -> case sqlState ex of
                             "23505" -> S.throwError $ uniqueFailedError newCat
