@@ -19,9 +19,3 @@ categoryByIdQuery id = proc () -> do
                            category   <- categoriesQuery -< ()
                            O.restrict -< categoryId category .== O.pgInt4 id
                            returnA    -< category
-
-categoryByNameQuery :: String -> O.Query CategoryColumnRead
-categoryByNameQuery name = proc () -> do
-                               category   <- categoriesQuery -< ()
-                               O.restrict -< categoryName category .== O.pgString name
-                               returnA    -< category

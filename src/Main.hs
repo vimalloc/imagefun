@@ -14,6 +14,7 @@ import  Network.Wai.Middleware.RequestLogger (mkRequestLogger, destination,
                                               Destination(Logger))
 import  System.Log.FastLogger (newStdoutLoggerSet, defaultBufSize)
 
+-- TODO change port and logger to be in config file as well
 
 main :: IO ()
 main = do
