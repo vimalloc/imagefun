@@ -1,7 +1,9 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module RestAPI.RestHelpers where
 
+import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.Trans.Reader (ask, ReaderT)
 import           Database.PostgreSQL.Simple (Connection)
 import           Data.Aeson (ToJSON, encode)
@@ -10,19 +12,31 @@ import           Data.CaseInsensitive  (mk)
 import           Data.Pool (Pool, withResource)
 import           GHC.Generics (Generic)
 import qualified Servant as S
+import           System.Log.FastLogger (LoggerSet, LogStr, pushLogStrLn)
 
 type ConnectionPool = Pool Connection
-type RestHandler = ReaderT ConnectionPool S.Handler
+
+data ReaderItems = ReaderItems
+    { getPool   :: ConnectionPool
+    , getLogger :: LoggerSet
+    }
+
+type RestHandler = ReaderT ReaderItems S.Handler
 
 data JSONError = JSONError
     { statusCode :: Int
     , title :: String
     , detail :: String
     } deriving (Generic, Show)
+
 instance ToJSON JSONError
 
+
 getConn :: RestHandler Connection
-getConn = ask >>= (`withResource` return)
+getConn = ask >>= (`withResource` return) . getPool
+
+logInfo :: LogStr -> RestHandler ()
+logInfo msg = ask >>= liftIO . (`pushLogStrLn` msg) . getLogger
 
 encodeJSONError :: JSONError -> S.ServantErr
 encodeJSONError jsonError = err {S.errBody = jsonBody, S.errHeaders = [jsonHeader]}

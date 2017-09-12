@@ -10,8 +10,9 @@ import qualified Network.Wai as NW
 import qualified Servant as S
 import           Servant ((:~>))
 
-restHandlerToSHandler :: ConnectionPool -> RestHandler :~> S.Handler
-restHandlerToSHandler pool = S.NT (`runReaderT` pool)
+restHandlerToSHandler :: ReaderItems -> RestHandler :~> S.Handler
+restHandlerToSHandler readerItems = S.NT (`runReaderT` readerItems)
 
-app :: ConnectionPool -> NW.Application
-app pool = S.serve categoryApi $ S.enter (restHandlerToSHandler pool) categoryServer
+app :: ReaderItems -> NW.Application
+app readerItems = S.serve categoryApi $ S.enter (restHandlerToSHandler readerItems)
+                                                categoryServer
