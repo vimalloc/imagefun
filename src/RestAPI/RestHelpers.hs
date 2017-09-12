@@ -2,19 +2,27 @@
 
 module RestAPI.RestHelpers where
 
+import           Control.Monad.Trans.Reader (ask, ReaderT)
+import           Database.PostgreSQL.Simple (Connection)
 import           Data.Aeson (ToJSON, encode)
 import           Data.ByteString.Char8 (pack)
 import           Data.CaseInsensitive  (mk)
+import           Data.Pool (Pool, withResource)
 import           GHC.Generics (Generic)
 import qualified Servant as S
+
+type ConnectionPool = Pool Connection
+type RestHandler = ReaderT ConnectionPool S.Handler
 
 data JSONError = JSONError
     { statusCode :: Int
     , title :: String
     , detail :: String
     } deriving (Generic, Show)
-
 instance ToJSON JSONError
+
+getConn :: RestHandler Connection
+getConn = ask >>= (`withResource` return)
 
 encodeJSONError :: JSONError -> S.ServantErr
 encodeJSONError jsonError = err {S.errBody = jsonBody, S.errHeaders = [jsonHeader]}

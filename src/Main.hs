@@ -1,7 +1,7 @@
 module Main where
 
 import           ConfigHelper
-import           RestAPI.Category
+import           RestAPI.App
 
 import           Data.ConfigFile (get)
 import           Data.Either.Utils (forceEither)
