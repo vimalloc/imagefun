@@ -1,10 +1,13 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module RestAPI.RestHelpers where
 
-import           Control.Monad.IO.Class (liftIO)
-import           Control.Monad.Trans.Reader (ask, ReaderT)
+import           Control.Monad.IO.Class (liftIO, MonadIO)
+import           Control.Monad.Trans.Control (MonadBaseControl)
+import           Control.Monad.Reader.Class (MonadReader, ask)
+import           Control.Monad.Trans.Reader (ReaderT)
 import           Database.PostgreSQL.Simple (Connection)
 import           Data.Aeson (ToJSON, encode)
 import           Data.ByteString.Char8 (pack)
@@ -32,10 +35,10 @@ data JSONError = JSONError
 instance ToJSON JSONError
 
 
-getConn :: RestHandler Connection
+getConn :: (MonadReader ReaderItems m, MonadBaseControl IO m) => m Connection
 getConn = ask >>= (`withResource` return) . getPool
 
-logInfo :: LogStr -> RestHandler ()
+logInfo :: (MonadReader ReaderItems m, MonadIO m) => LogStr -> m ()
 logInfo msg = ask >>= liftIO . (`pushLogStrLn` msg) . getLogger
 
 encodeJSONError :: JSONError -> S.ServantErr
